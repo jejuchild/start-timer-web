@@ -6,9 +6,9 @@
   <title>SNUPOOL 스타트 타이머</title>
   <style>
     body { margin: 0; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #0b0b0b; text-align: center; display: flex; flex-direction: column; min-height: 100vh; }
-    header { padding: 20px; }
+    header { padding: 0; }
     header img { max-width: 288px; height: auto; display:block; margin:0 auto; }
-    .wrap { flex: 1; display: grid; place-items: center; padding: 32px; }
+    .wrap { flex: 1; display: grid; place-items: center; padding: 0 24px 24px; }
     .panel { display: grid; gap: 28px; justify-items: center; grid-template-columns: 1fr auto; align-items: start; }
     #timer {
       font-variant-numeric: tabular-nums; 
@@ -20,6 +20,7 @@
       background: #e9ecef;
       min-width: 480px;
       text-align: center;
+      margin-top: -8px; /* 로고와의 공간을 더 줄이기 위해 살짝 위로 올림 */
     }
     @media (max-width: 720px) {
       .panel { grid-template-columns: 1fr; }
@@ -51,8 +52,8 @@
   </header>
 
   <main class="wrap">
-    <section class="panel">
-      <!-- <h1 id="h1" class="sr-only">스타트 타이머</h1> -->
+    <section class="panel" aria-labelledby="h1">
+      <h1 id="h1" class="sr-only">스타트 타이머</h1>
       <div>
         <div id="timer">00:00:00.00</div>
         <div class="controls">
@@ -167,32 +168,21 @@
     btnLap.addEventListener('click', lap);
     btnReset.addEventListener('click', reset);
 
-    // 모든 키 입력 감지해서 한/영 경고 표시
+    // 버튼 클릭 시에는 한/영 경고를 건드리지 않음 (감지 끔)
+    document.querySelectorAll("button").forEach(btn=>{
+      btn.addEventListener("click", ()=>{ warningEl.style.display = 'none'; });
+    });
+
     window.addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-
       if (e.code === 'Space') { e.preventDefault(); running ? stop() : start(); }
       else if (e.key && e.key.toLowerCase() === 'r') { reset(); }
       else if (e.key && e.key.toLowerCase() === 'l') { lap(); }
-
-      // 한글 입력 감지
-      if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(e.key)) {
+      else if (/[^a-zA-Z0-9]/.test(e.key)) {
         warningEl.style.display = 'block';
-      } else {
-        warningEl.style.display = 'none';
+        return;
       }
-    });
-
-    // 버튼 클릭 시에도 한/영 확인
-    document.querySelectorAll("button").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const lang = navigator.language || navigator.userLanguage;
-        if (lang.startsWith("ko")) {
-          warningEl.style.display = 'block';
-        } else {
-          warningEl.style.display = 'none';
-        }
-      });
+      warningEl.style.display = 'none';
     });
   })();
   </script>

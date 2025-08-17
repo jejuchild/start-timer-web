@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>스타트 타이머</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #0b0b0b;
+      --muted: #e9ecef;
+      --accent: #111827;
+      --btn: #f3f4f6;
+      --btn-hover: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+    .wrap { min-height: 100%; display: grid; place-items: center; padding: 32px; }
+    .panel { display: grid; gap: 28px; justify-items: center; }
+    #timer {
+      font-variant-numeric: tabular-nums; 
+      font-size: clamp(40px, 8vw, 88px);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      padding: 16px 24px;
+      border-radius: 16px;
+      background: var(--muted);
+      min-width: 480px;
+      text-align: center;
+    }
+    @media (max-width: 520px) { #timer { min-width: auto; width: 100%; } }
+    .controls { display: grid; grid-auto-flow: column; gap: 12px; }
+    button {
+      appearance: none; border: 0; cursor: pointer;
+      background: var(--btn); color: var(--fg);
+      padding: 14px 20px; border-radius: 12px;
+      font-size: 18px; font-weight: 700; letter-spacing: 0.02em;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04);
+      transition: transform .04s ease, background .15s ease;
+    }
+    button:hover { background: var(--btn-hover); }
+    button:active { transform: translateY(1px) scale(0.997); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    footer { position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="panel" aria-labelledby="h1">
+      <h1 id="h1" class="sr-only">스타트 타이머</h1>
+      <div id="timer" aria-live="polite" aria-atomic="true">00:00:00.00</div>
+      <div class="controls">
+        <button id="btn-ready" type="button">준비</button>
+        <button id="btn-start" type="button">출발</button>
+        <button id="btn-stop"  type="button">중지</button>
+        <button id="btn-reset" type="button">리셋</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- 오디오: 브라우저 호환을 위해 mp3/wav를 권장합니다. -->
+  <audio id="audio-ready" preload="auto">
+    <source src="takeyourmarks.mp3" type="audio/mpeg" />
+    <source src="takeyourmarks.wav" type="audio/wav" />
+  </audio>
+  <audio id="audio-beep" preload="auto">
+    <source src="beep.mp3" type="audio/mpeg" />
+    <source src="beep.wav" type="audio/wav" />
+  </audio>
+
+  <script>
+  (() => {
+    const timerEl = document.getElementById('timer');
+    const aReady = document.getElementById('audio-ready');
+    const aBeep  = document.getElementById('audio-beep');
+
+    const $ = (id) => document.getElementById(id);
+    const btnReady = $('btn-ready');
+    const btnStart = $('btn-start');
+    const btnStop  = $('btn-stop');
+    const btnReset = $('btn-reset');
+
+    let running = false;
+    let startTs = 0;  // performance.now() 기준 시작 시각(ms)
+    let accMs   = 0;  // 누적 시간(ms)
+    let rafId   = null;
+
+    const pad = (n, w = 2) => String(n).padStart(w, '0');
+    function format(ms) {
+      const cs = Math.floor(ms / 10); // centiseconds
+      const hrs  = Math.floor(cs / 360000);
+      const mins = Math.floor((cs / 6000) % 60);
+      const secs = Math.floor((cs / 100) % 60);
+      const c    = cs % 100;
+      return `${pad(hrs)}:${pad(mins)}:${pad(secs)}.${pad(c)}`;
+    }
+
+    function tick() {
+      if (!running) return;
+      const now = performance.now();
+      const ms = accMs + (now - startTs);
+      timerEl.textContent = format(ms);
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function start() {
+      if (running) return;
+      running = true;
+      startTs = performance.now();
+      tick();
+    }
+
+    function stop() {
+      if (!running) return;
+      running = false;
+      cancelAnimationFrame(rafId);
+      accMs += performance.now() - startTs;
+    }
+
+    function reset() {
+      running = false;
+      cancelAnimationFrame(rafId);
+      startTs = 0;
+      accMs = 0;
+      timerEl.textContent = '00:00:00.00';
+    }
+
+    async function play(audioEl) {
+      try {
+        audioEl.currentTime = 0;
+        await audioEl.play();
+      } catch (err) {
+        console.error('오디오 재생 실패:', err);
+        alert('오디오를 재생할 수 없습니다. 브라우저 권한/볼륨/포맷을 확인하세요.');
+      }
+    }
+
+    btnReady.addEventListener('click', () => play(aReady));
+    btnStart.addEventListener('click', async () => { await play(aBeep); start(); });
+    btnStop.addEventListener('click', stop);
+    btnReset.addEventListener('click', reset);
+
+    // 키보드 단축키: Space = 시작/중지 토글, R = 리셋
+    window.addEventListener('keydown', (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      if (e.code === 'Space') { e.preventDefault(); running ? stop() : start(); }
+      if (e.key && e.key.toLowerCase() === 'r') { reset(); }
+    });
+  })();
+  </script>
+
+  <footer>ⓘ 오디오 파일은 프로젝트 루트에 <code>takeyourmarks.mp3</code> / <code>beep.mp3</code> (또는 wav) 로 두세요.</footer>
+</body>
+</html>

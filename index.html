@@ -5,19 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SNUPOOL 스타트 타이머</title>
   <style>
-    :root {
-      --muted: #e9ecef;
-      --fg: #0b0b0b;
-      --btn: #f3f4f6;
-      --btn-hover: #e5e7eb;
-      --border: #d1d5db;
-    }
-    body { margin: 0; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #fff; color: var(--fg); }
-    header { padding: 8px 0 0; text-align: center; }
-    header img { max-width: 288px; height: auto; display: inline-block; }
-    main { padding: 8px 24px 24px; }
-    .timer-and-records { display: flex; justify-content: center; align-items: flex-start; gap: 12px; }
-    .panel { display: grid; gap: 16px; justify-items: center; }
+    body { margin: 0; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #0b0b0b; text-align: center; display: flex; flex-direction: column; min-height: 100vh; }
+    header { padding: 20px; }
+    header img { max-width: 288px; height: auto; display:block; margin:0 auto; }
+    .wrap { flex: 1; display: grid; place-items: center; padding: 32px; }
+    .panel { display: grid; gap: 28px; justify-items: center; grid-template-columns: 1fr auto; align-items: start; }
     #timer {
       font-variant-numeric: tabular-nums; 
       font-size: clamp(40px, 8vw, 88px);
@@ -25,33 +17,32 @@
       letter-spacing: 0.02em;
       padding: 16px 24px;
       border-radius: 16px;
-      background: var(--muted);
+      background: #e9ecef;
       min-width: 480px;
       text-align: center;
     }
+    @media (max-width: 720px) {
+      .panel { grid-template-columns: 1fr; }
+      #timer { min-width: auto; width: 100%; }
+    }
     .controls { display: grid; grid-auto-flow: column; gap: 12px; }
     button {
-      appearance: none; border: 1px solid var(--border); cursor: pointer;
-      background: var(--btn); color: var(--fg);
-      padding: 12px 18px; border-radius: 12px;
-      font-size: 16px; font-weight: 700;
+      appearance: none; border: 0; cursor: pointer;
+      background: #f3f4f6; color: #0b0b0b;
+      padding: 14px 20px; border-radius: 12px;
+      font-size: 18px; font-weight: 700;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04);
       transition: transform .04s ease, background .15s ease;
     }
-    button:hover { background: var(--btn-hover); }
+    button:hover { background: #e5e7eb; }
     button:active { transform: translateY(1px) scale(0.997); }
-    .records { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-width: 220px; max-height: 260px; overflow: auto; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-    .records h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .02em; color: #374151; }
-    #lap-list { list-style: decimal; margin: 0; padding-left: 22px; font-variant-numeric: tabular-nums; }
-    #lap-list li { padding: 4px 0; border-bottom: 1px dashed #e5e7eb; }
-    #lap-list li:last-child { border-bottom: 0; }
-    @media (max-width: 720px) {
-      #timer { min-width: auto; width: 100%; }
-      .timer-and-records { flex-direction: column; align-items: stretch; }
-      .records { max-height: 180px; }
-      .controls { justify-content: center; }
-    }
-    .sr-only { position: absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
-    footer { text-align: center; font-size: 13px; color: #4b5563; padding: 12px; border-top: 1px solid var(--border); }
+    .laps { background:#f9fafb; border:1px solid #e5e7eb; border-radius:12px; padding:12px; min-width:180px; text-align:left; }
+    .laps h3 { margin:0 0 8px; font-size:16px; }
+    .laps ul { list-style:none; padding:0; margin:0; font-size:14px; }
+    .laps li { padding:2px 0; border-bottom:1px solid #e5e7eb; }
+    .laps li:last-child { border-bottom:none; }
+    footer { padding: 16px; font-size: 14px; color: #374151; }
+    #lang-warning { margin-top: 8px; font-size: 14px; color: red; display: none; }
   </style>
 </head>
 <body>
@@ -59,30 +50,29 @@
     <img src="KakaoTalk_Photo_2025-08-17-18-57-07.jpeg" alt="SNUPOOL 로고" />
   </header>
 
-  <main>
+  <main class="wrap">
     <section class="panel" aria-labelledby="h1">
       <h1 id="h1" class="sr-only">스타트 타이머</h1>
-      <div class="timer-and-records">
-        <div>
-          <div id="timer">00:00:00.00</div>
-          <div class="controls" style="margin-top:12px">
-            <button id="btn-ready" type="button">준비</button>
-            <button id="btn-start" type="button">출발</button>
-            <button id="btn-stop"  type="button">중지</button>
-            <button id="btn-lap"   type="button">랩</button>
-            <button id="btn-reset" type="button">리셋</button>
-          </div>
+      <div>
+        <div id="timer">00:00:00.00</div>
+        <div class="controls">
+          <button id="btn-ready" type="button">준비</button>
+          <button id="btn-start" type="button">출발</button>
+          <button id="btn-stop"  type="button">중지</button>
+          <button id="btn-lap"   type="button">랩</button>
+          <button id="btn-reset" type="button">리셋</button>
         </div>
-        <aside class="records" aria-label="기록">
-          <h3>기록</h3>
-          <ol id="lap-list"></ol>
-        </aside>
       </div>
+      <aside class="laps">
+        <h3>기록</h3>
+        <ul id="lap-list"></ul>
+      </aside>
     </section>
   </main>
 
   <footer>
-    ⌨️ 단축키 안내: Space = 시작/중지 · L = 랩
+    <p>단축키: Space = 시작/중지 · R = 리셋 · L = 랩</p>
+    <p id="lang-warning">한글로 설정되어있습니다! 한/영키 눌러주세요!</p>
   </footer>
 
   <audio id="audio-ready" preload="auto">
@@ -99,14 +89,14 @@
     const timerEl = document.getElementById('timer');
     const aReady = document.getElementById('audio-ready');
     const aBeep  = document.getElementById('audio-beep');
+    const lapList = document.getElementById('lap-list');
+    const warningEl = document.getElementById('lang-warning');
     const $ = (id) => document.getElementById(id);
-
     const btnReady = $('btn-ready');
     const btnStart = $('btn-start');
     const btnStop  = $('btn-stop');
     const btnLap   = $('btn-lap');
     const btnReset = $('btn-reset');
-    const lapList  = $('lap-list');
 
     let running = false;
     let startTs = 0;
@@ -148,22 +138,23 @@
     function reset() {
       running = false;
       cancelAnimationFrame(rafId);
-      startTs = 0; accMs = 0;
+      startTs = 0;
+      accMs = 0;
       timerEl.textContent = '00:00:00.00';
       lapList.innerHTML = '';
     }
 
     function lap() {
-      const text = timerEl.textContent;
+      const now = running ? accMs + (performance.now() - startTs) : accMs;
       const li = document.createElement('li');
-      li.textContent = text;
+      li.textContent = format(now);
       lapList.appendChild(li);
-      lapList.parentElement.scrollTop = lapList.parentElement.scrollHeight;
     }
 
     async function play(audioEl) {
       try {
-        audioEl.currentTime = 0; await audioEl.play();
+        audioEl.currentTime = 0;
+        await audioEl.play();
       } catch (err) {
         console.error('오디오 재생 실패:', err);
         alert('오디오를 재생할 수 없습니다. 브라우저 권한/볼륨/포맷을 확인하세요.');
@@ -172,14 +163,20 @@
 
     btnReady.addEventListener('click', () => play(aReady));
     btnStart.addEventListener('click', async () => { await play(aBeep); start(); });
-    btnStop .addEventListener('click', stop);
-    btnLap  .addEventListener('click', lap);
+    btnStop.addEventListener('click', stop);
+    btnLap.addEventListener('click', lap);
     btnReset.addEventListener('click', reset);
 
     window.addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       if (e.code === 'Space') { e.preventDefault(); running ? stop() : start(); }
-      if (e.key && e.key.toLowerCase() === 'l') { lap(); }
+      else if (e.key && e.key.toLowerCase() === 'r') { reset(); }
+      else if (e.key && e.key.toLowerCase() === 'l') { lap(); }
+      else if (/[^a-zA-Z0-9]/.test(e.key)) {
+        warningEl.style.display = 'block';
+        return;
+      }
+      warningEl.style.display = 'none';
     });
   })();
   </script>

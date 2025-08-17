@@ -8,8 +8,8 @@
     body { margin: 0; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #0b0b0b; text-align: center; display: flex; flex-direction: column; min-height: 100vh; }
     header { padding: 0; }
     header img { max-width: 288px; height: auto; display:block; margin:0 auto; }
-    .wrap { flex: 1; display: grid; place-items: center; padding: 0 24px 24px; }
-    .panel { display: grid; gap: 28px; justify-items: center; grid-template-columns: 1fr auto; align-items: start; }
+    .wrap { flex: 1; display: grid; place-items: center; padding: 0 32px 32px 32px; }
+    .panel { display: grid; gap: 20px; justify-items: center; grid-template-columns: 1fr auto; align-items: start; margin-top: -16px; }
     #timer {
       font-variant-numeric: tabular-nums; 
       font-size: clamp(40px, 8vw, 88px);
@@ -20,7 +20,7 @@
       background: #e9ecef;
       min-width: 480px;
       text-align: center;
-      margin-top: -8px; /* 로고와의 공간을 더 줄이기 위해 살짝 위로 올림 */
+      margin-top: -16px;
     }
     @media (max-width: 720px) {
       .panel { grid-template-columns: 1fr; }
@@ -42,7 +42,7 @@
     .laps ul { list-style:none; padding:0; margin:0; font-size:14px; }
     .laps li { padding:2px 0; border-bottom:1px solid #e5e7eb; }
     .laps li:last-child { border-bottom:none; }
-    footer { padding: 16px; font-size: 14px; color: #374151; }
+    footer { padding: 16px; font-size: 14px; color: #374151; border-top: 1px solid #e5e7eb; }
     #lang-warning { margin-top: 8px; font-size: 14px; color: red; display: none; }
   </style>
 </head>
@@ -52,7 +52,7 @@
   </header>
 
   <main class="wrap">
-    <section class="panel" aria-labelledby="h1">
+    <section class="panel">
       <div>
         <div id="timer">00:00:00.00</div>
         <div class="controls">
@@ -71,7 +71,7 @@
   </main>
 
   <footer>
-    <p>단축키: Space = 시작/중지 · R = 리셋 · L = 랩</p>
+    <p>단축키⌨️: Space = 시작/중지 · L = 랩</p>
     <p id="lang-warning">한글로 설정되어있습니다! 한/영키 눌러주세요!</p>
   </footer>
 
@@ -167,15 +167,9 @@
     btnLap.addEventListener('click', lap);
     btnReset.addEventListener('click', reset);
 
-    // 버튼 클릭 시에는 한/영 경고를 건드리지 않음 (감지 끔)
-    document.querySelectorAll("button").forEach(btn=>{
-      btn.addEventListener("click", ()=>{ warningEl.style.display = 'none'; });
-    });
-
     window.addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       if (e.code === 'Space') { e.preventDefault(); running ? stop() : start(); }
-      else if (e.key && e.key.toLowerCase() === 'r') { reset(); }
       else if (e.key && e.key.toLowerCase() === 'l') { lap(); }
       else if (/[^a-zA-Z0-9]/.test(e.key)) {
         warningEl.style.display = 'block';

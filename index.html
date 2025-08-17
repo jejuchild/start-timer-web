@@ -5,11 +5,25 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SNUPOOL 스타트 타이머</title>
   <style>
-    body { margin: 0; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #fff; color: #0b0b0b; text-align: center; }
-    header { padding: 20px; }
-    header img { max-width: 288px; height: auto; } /* 기존 360px → 80% 크기 */
-    .wrap { min-height: 100%; display: grid; place-items: center; padding: 32px; }
-    .panel { display: grid; gap: 28px; justify-items: center; }
+    :root {
+      --muted: #e9ecef;
+      --fg: #0b0b0b;
+      --btn: #f3f4f6;
+      --btn-hover: #e5e7eb;
+      --border: #d1d5db;
+    }
+    body { margin: 0; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #fff; color: var(--fg); }
+    header { padding: 8px 0 0; text-align: center; } /* 상단 로고와 타이머 사이 여백 제거 */
+    header img { max-width: 288px; height: auto; display: inline-block; }
+
+    /* 헤더 바로 아래에 붙도록 여백 최소화 */
+    main { padding: 8px 24px 24px; }
+
+    /* 타이머 + 기록 박스 가로 배치 */
+    .timer-and-records { display: flex; justify-content: center; align-items: flex-start; gap: 12px; }
+
+    .panel { display: grid; gap: 16px; justify-items: center; }
+
     #timer {
       font-variant-numeric: tabular-nums; 
       font-size: clamp(40px, 8vw, 88px);
@@ -17,22 +31,37 @@
       letter-spacing: 0.02em;
       padding: 16px 24px;
       border-radius: 16px;
-      background: #e9ecef;
+      background: var(--muted);
       min-width: 480px;
       text-align: center;
     }
-    @media (max-width: 520px) { #timer { min-width: auto; width: 100%; } }
+
     .controls { display: grid; grid-auto-flow: column; gap: 12px; }
     button {
-      appearance: none; border: 0; cursor: pointer;
-      background: #f3f4f6; color: #0b0b0b;
-      padding: 14px 20px; border-radius: 12px;
-      font-size: 18px; font-weight: 700;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04);
+      appearance: none; border: 1px solid var(--border); cursor: pointer;
+      background: var(--btn); color: var(--fg);
+      padding: 12px 18px; border-radius: 12px;
+      font-size: 16px; font-weight: 700;
       transition: transform .04s ease, background .15s ease;
     }
-    button:hover { background: #e5e7eb; }
+    button:hover { background: var(--btn-hover); }
     button:active { transform: translateY(1px) scale(0.997); }
+
+    /* 기록 박스 */
+    .records { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-width: 220px; max-height: 260px; overflow: auto; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+    .records h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .02em; color: #374151; }
+    #lap-list { list-style: decimal; margin: 0; padding-left: 22px; font-variant-numeric: tabular-nums; }
+    #lap-list li { padding: 4px 0; border-bottom: 1px dashed #e5e7eb; }
+    #lap-list li:last-child { border-bottom: 0; }
+
+    @media (max-width: 720px) {
+      #timer { min-width: auto; width: 100%; }
+      .timer-and-records { flex-direction: column; align-items: stretch; }
+      .records { max-height: 180px; }
+      .controls { justify-content: center; }
+    }
+
+    .sr-only { position: absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
   </style>
 </head>
 <body>
@@ -40,15 +69,25 @@
     <img src="KakaoTalk_Photo_2025-08-17-18-57-07.jpeg" alt="SNUPOOL 로고" />
   </header>
 
-  <main class="wrap">
+  <main>
     <section class="panel" aria-labelledby="h1">
       <h1 id="h1" class="sr-only">스타트 타이머</h1>
-      <div id="timer">00:00:00.00</div>
-      <div class="controls">
-        <button id="btn-ready" type="button">준비</button>
-        <button id="btn-start" type="button">출발</button>
-        <button id="btn-stop"  type="button">중지</button>
-        <button id="btn-reset" type="button">리셋</button>
+
+      <div class="timer-and-records">
+        <div>
+          <div id="timer">00:00:00.00</div>
+          <div class="controls" style="margin-top:12px">
+            <button id="btn-ready" type="button">준비</button>
+            <button id="btn-start" type="button">출발</button>
+            <button id="btn-stop"  type="button">중지</button>
+            <button id="btn-lap"   type="button">랩</button>
+            <button id="btn-reset" type="button">리셋</button>
+          </div>
+        </div>
+        <aside class="records" aria-label="기록">
+          <h3>기록</h3>
+          <ol id="lap-list"></ol>
+        </aside>
       </div>
     </section>
   </main>
@@ -68,14 +107,18 @@
     const aReady = document.getElementById('audio-ready');
     const aBeep  = document.getElementById('audio-beep');
     const $ = (id) => document.getElementById(id);
+
     const btnReady = $('btn-ready');
     const btnStart = $('btn-start');
     const btnStop  = $('btn-stop');
+    const btnLap   = $('btn-lap');
     const btnReset = $('btn-reset');
 
+    const lapList  = $('lap-list');
+
     let running = false;
-    let startTs = 0;
-    let accMs   = 0;
+    let startTs = 0;   // ms
+    let accMs   = 0;   // 누적 ms
     let rafId   = null;
 
     const pad = (n, w = 2) => String(n).padStart(w, '0');
@@ -113,15 +156,25 @@
     function reset() {
       running = false;
       cancelAnimationFrame(rafId);
-      startTs = 0;
-      accMs = 0;
+      startTs = 0; accMs = 0;
       timerEl.textContent = '00:00:00.00';
+      // 기록 초기화
+      lapList.innerHTML = '';
+    }
+
+    function lap() {
+      // 현재 표시 시간을 기록 박스에 추가 (타이머는 계속 진행)
+      const text = timerEl.textContent;
+      const li = document.createElement('li');
+      li.textContent = text;
+      lapList.appendChild(li);
+      // 스크롤 맨 아래로
+      lapList.parentElement.scrollTop = lapList.parentElement.scrollHeight;
     }
 
     async function play(audioEl) {
       try {
-        audioEl.currentTime = 0;
-        await audioEl.play();
+        audioEl.currentTime = 0; await audioEl.play();
       } catch (err) {
         console.error('오디오 재생 실패:', err);
         alert('오디오를 재생할 수 없습니다. 브라우저 권한/볼륨/포맷을 확인하세요.');
@@ -130,13 +183,16 @@
 
     btnReady.addEventListener('click', () => play(aReady));
     btnStart.addEventListener('click', async () => { await play(aBeep); start(); });
-    btnStop.addEventListener('click', stop);
+    btnStop .addEventListener('click', stop);
+    btnLap  .addEventListener('click', lap);
     btnReset.addEventListener('click', reset);
 
+    // 단축키: Space 시작/중지, R 리셋, L 랩
     window.addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       if (e.code === 'Space') { e.preventDefault(); running ? stop() : start(); }
       if (e.key && e.key.toLowerCase() === 'r') { reset(); }
+      if (e.key && e.key.toLowerCase() === 'l') { lap(); }
     });
   })();
   </script>

@@ -167,16 +167,16 @@
     btnLap.addEventListener('click', lap);
     btnReset.addEventListener('click', reset);
 
-    window.addEventListener('keydown', (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-      if (e.code === 'Space') { e.preventDefault(); running ? stop() : start(); }
-      else if (e.key && e.key.toLowerCase() === 'l') { lap(); }
-      else if (/[^a-zA-Z0-9]/.test(e.key)) {
-        warningEl.style.display = 'block';
-        return;
-      }
-      warningEl.style.display = 'none';
-    });
+window.addEventListener('keydown', (e) => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  if (e.code === 'Space') { 
+    e.preventDefault(); 
+    running ? stop() : start(); 
+  }
+  else if (e.key && (e.key.toLowerCase() === 'l' || e.key === 'ㅣ')) { 
+    lap(); 
+  }
+});
   })();
   </script>
 </body>
